@@ -1,0 +1,313 @@
+<html>
+
+<head>
+    <title>Scene3 - BMI VS PRICE by Gender</title>
+
+    <style>
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+        #selectButton {
+            padding: 10px;
+            font-size: 16px;
+            margin-left: 400px;
+
+        }
+    </style>
+</head>
+
+<body>
+    <button onclick="window.location.href='scene2.html';">
+        Previous (Expense Histogram)
+    </button>
+    <button onclick="window.location.href='scene4.html';">
+        Next (Age vs Expense)
+    </button>
+
+    <div id="additional_text">
+        <p><strong><u>Tip</u></strong> ✪ Hover Over Datapoints & Change Gender</p>
+    </div>
+
+    <div id="ano">
+        <p>Weak Positive Correlation</p>
+    </div>
+
+
+    <style>
+        #additional_text {
+            position: absolute;
+            top: 300px;
+            left: 1000px;
+            width: 500px;
+            font-size: 16px;
+        }
+
+        #ano {
+            position: absolute;
+            top: 240px;
+            left: 790px;
+            width: 100px;
+            font-size: 16px;
+        }
+    </style>
+
+</body>
+
+
+<script src="https://d3js.org/d3.v4.js"></script>
+
+
+<select id="selectButton"></select>
+
+<div id="my_dataviz"></div>
+
+<script>
+
+    var margin = { top: 30, right: 30, bottom: 70, left: 50 },
+        width = 1000 - margin.left - margin.right,
+        height = 600 - margin.top - margin.bottom;
+
+    var svg = d3.select("#my_dataviz")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv("./data/insurance.csv", function (data) {
+
+        var allGroup = d3.map(data, function (d) { return (d.sex) }).keys()
+
+        // add the options
+        d3.select("#selectButton")
+            .selectAll('myOptions')
+            .data(allGroup)
+            .enter()
+            .append('option')
+            .text(function (d) { return d; }) 
+            .attr("value", function (d) { return d; }) 
+
+        // Add X 
+        var x = d3.scaleLinear()
+            .domain([0, d3.max(data, function (d) { return +d.charges })])
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Add Y 
+        var y = d3.scaleLinear()
+            .domain([10, 60])
+            .range([height, 0]);
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // text label for x 
+        svg.append("text")
+            .attr("transform",
+                "translate(" + (width / 2) + " ," +
+                (height + margin.top + 20) + ")")
+            .style("text-anchor", "middle")
+            .text("Medical Expenses ($)");
+        // text label for y 
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("BMI");
+
+        svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", -15)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("text-decoration", "underline")
+            .style("font-weight", "bold")
+            .text("BMI vs EXPENSE by Gender");
+
+
+        var tooltip = d3.select("#my_dataviz")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "30px")
+            .style("padding", "10px");
+
+        var mouseover = function (d) {
+            d3.select(this)
+                .style("fill", "red");
+
+            tooltip
+                .style("opacity", 1);
+        };
+
+        var mousemove = function (d) {
+            tooltip
+                .html("<span style='font-weight: bold;text-decoration: underline;'>Medical Expenses:</span> $" + d.charges + "     <span style='font-weight: bold;text-decoration:underline;'>BMI:</span>" + " " + d.bmi)
+                .style("left", (d3.mouse(this)[0] + 90) + "px")
+                .style("top", (d3.mouse(this)[1]) + "px");
+        };
+
+        var mouseleave = function (d) {
+            d3.select(this)
+                .style("fill", "#fc9961");
+
+            tooltip
+                .transition()
+                .duration(200)
+                .style("opacity", 0);
+        };
+
+        var dataFilter = data.filter(function (d) { return d.sex == allGroup[0]; });
+
+        svg.append('g')
+            .selectAll("dot")
+            .data(dataFilter)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d) { return x(d.charges); })
+            .attr("cy", function (d) { return y(d.bmi); })
+            .attr("r", 7)
+            .style("fill", "#fc9961")
+            .style("opacity", 0.7)
+            .style("stroke", "white")
+            .on("mouseover", mouseover)
+            .on("mousemove", mousemove)
+            .on("mouseleave", mouseleave);
+
+
+        function addStraightLine(m, b) {
+            var y1 = m * 0 + b;
+            var y2 = m * d3.max(data, function (d) { return +d.charges; }) + b;
+
+            svg.append("line")
+                .attr("x1", 40)
+                .attr("x2", 900)
+                .attr("y1", 350)
+                .attr("y2", 200)
+                .attr("stroke", "black")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5, 5")
+                .attr("stroke-opacity", 0.8);
+        }
+
+
+        addStraightLine(0.005, 500);
+
+        function update(selectedGroup) {
+
+            svg.selectAll("*").remove();
+
+            var dataFilter = data.filter(function (d) { return d.sex == selectedGroup })
+
+            var x = d3.scaleLinear()
+                .domain([0, d3.max(data, function (d) { return +d.charges })])
+                .range([0, width]);
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+            var y = d3.scaleLinear()
+                .domain([10, 60])
+                .range([height, 0]);
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+
+            svg.append('g')
+                .selectAll("dot")
+                .data(dataFilter)
+                .enter()
+                .append("circle")
+                .attr("cx", function (d) { return x(d.charges); })
+                .attr("cy", function (d) { return y(d.bmi); })
+                .attr("r", 7)
+                .style("fill", "#fc9961")
+                .style("opacity", 0.7)
+                .style("stroke", "white")
+                .on("mouseover", mouseover)
+                .on("mousemove", mousemove)
+                .on("mouseleave", mouseleave)
+
+            svg.append("text")
+                .attr("transform",
+                    "translate(" + (width / 2) + " ," +
+                    (height + margin.top + 20) + ")")
+                .style("text-anchor", "middle")
+                .text("Medical Expenses ($)");
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("BMI");
+            svg.append("text")
+                .attr("x", (width / 2))
+                .attr("y", -15)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("text-decoration", "underline")
+                .style("font-weight", "bold")
+                .text("BMI vs EXPENSE by Gender");
+
+
+            function addStraightLine(m, b) {
+                var y1 = m * 0 + b;
+                var y2 = m * d3.max(data, function (d) { return +d.charges; }) + b;
+
+                svg.append("line")
+                    .attr("x1", 40)
+                    .attr("x2", 900)
+                    .attr("y1", 350)
+                    .attr("y2", 200)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 2)
+                    .attr("stroke-dasharray", "5, 5")
+                    .attr("stroke-opacity", 0.8);
+            }
+
+
+            addStraightLine(0.005, 500);
+
+        }
+
+        d3.select("#selectButton").on("change", function (d) {
+            var selectedOption = d3.select(this).property("value")
+            update(selectedOption)
+        })
+
+
+    });
+
+</script>
+
+<p>
+    This scatterplot depicts the relationship between BMI and medical costs, and also provides a way to view the
+    differences based on sex.
+</p>
+<p>
+    We find that there is a <span style="color:rgb(255, 136, 0);">weak positive correlation</span> between BMI and
+    medical costs for both genders, which is expected
+    as obesity tends to lead to health issues and in turn higher medical costs.
+</p>
+<p>
+    Keeping in mind that the ideal BMI is between <span style="color:rgb(255, 136, 0);">18.5 to 24.9</span>, one thing
+    to notice is that there are <span style="color:rgb(255, 136, 0);">no high outlier
+        medical expenses</span> recorded for any individuals that fell within that BMI range.
+</p>
+<p>
+    When viewing the differences between male and females, we find that males tend to have <span
+        style="color:rgb(255, 136, 0);">more high outlier medical
+        expenses</span> than females, and also <span style="color:rgb(255, 136, 0);">more outlier high BMIs</span>.
+</p>
+
+</html>

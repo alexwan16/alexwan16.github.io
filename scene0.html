@@ -1,0 +1,191 @@
+<html>
+
+<head>
+    <title>Scene0 - BMI Histogram</title>
+
+    <style>
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+
+<body>
+    <button onclick="window.location.href='begin.html';">
+        Previous (Introduction)
+    </button>
+    <button onclick="window.location.href='scene1.html';">
+        Next (Age Histogram)
+    </button>
+
+
+    <div class="bin-container">
+        <label>Intervals: </label>
+        <input type="number" min="0" max="100" step="10" value="50" id="nBin">
+    </div>
+
+    <div id="additional_text">
+        <p><strong><u>Tip</u></strong> ✪ Edit the Interval Count (MAX:100)</p>
+    </div>
+
+    <style>
+        .bin-container {
+            position: absolute;
+            top: 8px;
+            right: 450px;
+        }
+
+        #nBin {
+            width: 50px;
+            height: 41px;
+        }
+
+        #additional_text {
+            position: absolute;
+            top: 300px;
+            left: 1000px;
+            width: 500px;
+            font-size: 16px;
+        }
+    </style>
+
+</body>
+
+
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<div id="my_dataviz"></div>
+
+<script>
+
+    var margin = { top: 30, right: 30, bottom: 70, left: 50 },
+        width = 1000 - margin.left - margin.right,
+        height = 600 - margin.top - margin.bottom;
+
+    var svg = d3.select("#my_dataviz")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv("./data/insurance.csv", function (data) {
+
+
+        //X axis
+        var x = d3.scaleLinear()
+            .domain([0, d3.max(data, function (d) { return +d.bmi })]) 
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Y axis
+        var y = d3.scaleLinear()
+            .range([height, 0]);
+        var yAxis = svg.append("g")
+
+        // text label for x
+        svg.append("text")
+            .attr("transform",
+                "translate(" + (width / 2) + " ," +
+                (height + margin.top + 20) + ")")
+            .style("text-anchor", "middle")
+            .text("BMI");
+        // text label for y 
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Frequency");
+
+        svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", -15)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("text-decoration", "underline")
+            .style("font-weight", "bold") 
+            .text("BMI Histogram");
+
+        function update(nBin) {
+
+            // set the parameters for histogram
+            var histogram = d3.histogram()
+                .value(function (d) { return d.bmi; })   
+                .domain(x.domain())  
+                .thresholds(x.ticks(nBin)); 
+
+            var bins = histogram(data);
+
+            // Y axis
+            y.domain([0, d3.max(bins, function (d) { return d.length; })]); 
+            yAxis
+                .transition()
+                .duration(1000)
+                .call(d3.axisLeft(y));
+
+            var u = svg.selectAll("rect")
+                .data(bins);
+
+            // Manage the existing bars
+            u.enter()
+                .append("rect") 
+                .merge(u) 
+                .attr("x", 1)
+                .attr("transform", function (d) {
+                    return "translate(" + x(d.x0) + "," + height + ")"; 
+                })
+                .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
+                .attr("height", 0) 
+                .style("fill", "#fc9961")
+                .style("opacity", 0.8)
+                .transition()
+                .duration(500)
+                .delay(function (d, i) {
+                    return i * 45; 
+                })
+                .attr("transform", function (d) {
+                    return "translate(" + x(d.x0) + "," + y(d.length) + ")";
+                })
+                .attr("height", function (d) { return height - y(d.length); });
+
+            u.exit()
+                .remove();
+        }
+
+        update(50)
+
+
+        d3.select("#nBin").on("input", function () {
+            update(+this.value);
+        });
+    });
+
+</script>
+
+<p>
+
+</p>
+<p>
+    This graph shows the distribution of BMI in the united states based on the 1338 individuals surveyed.
+</p>
+<p>
+
+    We see that the data forms a <span style="color:rgb(255, 136, 0);">normal distribution curve</span>, which confirms
+    the validity of the data.
+</p>
+<p>
+
+    Keeping in mind that the ideal BMI <span style="color:rgb(255, 136, 0);">18.5 to 24.9</span>, we find that the mean
+    bmi in this dataset is around <span style="color:rgb(255, 136, 0);">30</span>, which suggests that the average
+    person in the United States is overweight.
+
+</p>
+
+</html>
